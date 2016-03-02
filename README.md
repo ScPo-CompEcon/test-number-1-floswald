@@ -28,3 +28,8 @@ This repo contains a code scaffold for the integration homework. It will contain
 	* Push it to your github account.
 	* On your `HW-integration` fork on github, click the `new pull request` button.
 	* In the comment, let me know who was working together on this homework. You should mention yourself and your collaborator's name with `@your_github_username`. For example, I would write "this was done by @floswald".
+
+
+# License
+
+Please observe that this repo is part of the [Sciences Po CompEcon Organisation](https://github.com/ScPo-CompEcon) and therefore subject to the license detailed at the bottom of [The Syllabus repo](https://github.com/ScPo-CompEcon/Syllabus).
