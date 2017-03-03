@@ -1,14 +1,19 @@
 
 module HW_int
 
+	const A_SOL = 4  # analytic solution
+
 
 	# question 1 b) 
 
 	using FastGaussQuadrature
 	using Roots
 	using Sobol
-	using PyPlot
+	# using PyPlot
+	using Plots
 	using Distributions
+	using NullableArrays
+	using DataStructures  # OrderedDict
 
 	# demand function
 	q(p) = 2*(p.^-0.5)
@@ -33,53 +38,71 @@ module HW_int
 		end
 	end
 
+	print_f(x)  = abs(100*(A_SOL-x))/A_SOL
+	print_fn(x) = round(print_f(x),5)
+
+	function plot_q1()
+
+		# run for all n
+		d = OrderedDict()
+		ns = [10;100;1000]
+		for n in ns
+			d[n] = Dict()
+			d[n][:laguerre] = question_1b(n)
+			d[n][:MC] = question_1c(n)
+			d[n][:QMC] = question_1d(n)
+		end
+
+		# build 2x3 plot matrix
+		# 			Laguerre 	MC 		QMC					
+		# points    pts vs vals at n = 10
+		# error     n vs error
+		l = @layout grid(2,3)
+		# pts locations for n=10
+		p1 = Any[]
+		for (k,v) in d[10]
+			push!(p1,scatter(v[:x],v[:y],legend=false))
+		end
+		# errors vs n
+		for (k,v) in d[10]
+			# println(k)
+			# println([print_f(d[ns[1]][k][:I]);print_f(d[ns[2]][k][:I]);print_f(d[ns[3]][k][:I])])
+			push!(p1,scatter(ns,[print_f(d[ns[1]][k][:I]);print_f(d[ns[2]][k][:I]);print_f(d[ns[3]][k][:I])],title=k,xaxis=(:log10),legend=false))
+		end
+		plot(p1...,layout=l)
+
+	end
+
 	function question_1b(n)
 
 		gl = gausslegendre(n);
 
-		# bounds of integration
-
-		# function to integrate:
-		# CS_4 = \int_0^4 q(p) dp - 4
-		# CS_1 = \int_0^1 q(p) dp - 2
-		# CS_4 - CS_1 = \int_0^4 q(p) dp - 4 - \int_0^1 q(p) dp + 2 
-		#             = \int_1^4 q(p) dp - 2 
-
 		# bounds on integration
 		a = 1
-		# b = pstar = 4
-		pstar = 4
-
-		# equilibrium quantity
-		# qstar = q(pstar)
+		b = 4
 
 		# use transformation formula to map into [-1,1]
-		pts  = ba2(a,pstar).*gl[1] .+ ab2(a,pstar)	# integration points
+		pts  = ba2(a,b).*gl[1] .+ ab2(a,b)	# integration points
 		vals = q(pts)  # function values at those points
- 		Integ = ba2(a,pstar) * (gl[2]' * vals ) 
-		Integ -= 2
-		Integ = Integ[1]
+ 		Integ = ba2(a,b) * (gl[2]' * vals ) # do integration
 
 		# plot
-		figure()
-		plot(pts,vals,"o-")
-		title("Gauss Laguerre")
+		# plots only for n=10
+		# if n==10
+		# 	figure()
+		# 	plot(pts,vals,"o-")
+		# 	title("Gauss Laguerre")
+		# end
 
 		println("estimated change in CS using $n gauss legendre nodes is $(Integ)")
-		println("i.e. an error of $(round(abs(100*(2-Integ))/2,5)) percent")
+		println("i.e. an error of $(print_fn(Integ)) percent")
 		println("")
+		return Dict(:y=>vals, :x=>pts, :I => Integ)
 	end
 
 	# question 1 c)
 
 	function question_1c(n)
-
-		# function to integrate:
-		# CS_4 = \int_0^4 q(p) dp - 4
-		# CS_1 = \int_0^1 q(p) dp - 2
-		# CS_4 - CS_1 = \int_0^4 q(p) dp - 4 - \int_0^1 q(p) dp + 2 
-		#             = \int_1^4 q(p) dp - 2 
-
 
 		# get n random numbers from [1,4]
 		pts = rand(n)*3 + 1	
@@ -87,29 +110,28 @@ module HW_int
 
 		# integrate: Monte carlo is defined for the "hypercube" [0,1]
 		# we need to adjust the "volume" of this cube to be 3
-		Integ = 3*mean(vals) - 2
+		# Integ = 3*mean(vals) - 2
+		Integ = 3*mean(vals) 
 		
 		# plot
-		figure()
-		plot(pts,vals,"o")
-		axhline(mean(vals),color="red")
-		title("Monte Carlo")
+		# if n==10
+		# 	figure()
+		# 	plot(pts,vals,"o")
+		# 	ylim([0;5])
+		# 	axhline(mean(vals),color="red")
+		# 	title("Monte Carlo")
+		# end
 
 		println("estimated change in CS using $n monte carlo nodes is $Integ)")
-		println("i.e. an error of $(round(abs(100*(2-Integ))/2,5)) percent")
+		println("i.e. an error of $(print_fn(Integ)) percent")
 		println("")
+		return Dict(:y=>vals, :x=>pts, :I => Integ)
 
 	end
 
 	function question_1d(n)
 
-		# CS1: p=4
-		# ========
-
-		pstar=4.0
-		pqstar = pstar * q(pstar)
-
-		s = SobolSeq(1,[1],[pstar])  # 1-dimensional sobol sequence in [1,pstar]
+		s = SobolSeq(1,[1],[4])  # 1-dimensional sobol sequence in [1,pstar]
 		pts = zeros(n)
 		for i in 1:n
 			pts[i] = next(s)[1]
@@ -119,17 +141,20 @@ module HW_int
 
 		# integrate: Monte carlo is defined for the hypercube [0,1]
 		# we need to extend the length of that interval to be 3
-		Integ = 3*mean(vals) - 2
+		Integ = 3*mean(vals)
 		
 		# plot
-		figure()
-		plot(pts,vals,"o")
-		axhline(mean(vals),color="red")
-		title("Quasi Monte Carlo")
+		# if n==10
+		# 	figure()
+		# 	plot(pts,vals,"o")
+		# 	axhline(mean(vals),color="red")
+		# 	title("Quasi Monte Carlo")
+		# end
 
 		println("estimated change in CS using $n Quasi monte carlo nodes is $Integ)")
-		println("i.e. an error of $(round(abs(100*(2-Integ))/2,5)) percent")
+		println("i.e. an error of $(print_fn(Integ)) percent")
 		println("")
+		return Dict(:y=>vals, :x=>pts, :I => Integ)
 
 	end
 
@@ -140,7 +165,7 @@ module HW_int
 		gh = gausshermite(n)
 
 		Sigma = hcat([0.02, 0.01],[0.01,0.01])
-		Omega = chol(Sigma,Val{:U})
+		Omega = chol(Sigma)
 
 		mu = [0.0;0.0]
 
@@ -152,17 +177,26 @@ module HW_int
 		grids = Omega * gr'	 + zeros(2,n*n)   # zeros here would be a matrix with mu
 
 		# find eqm price at each combination of theta1,theta2
-		pstar = zeros(n*n)
+		pstar = NullableArray(Float64,n*n)  # create an array of nullable for float64
 		for i in 1:length(pstar)
-			pstar[i] = fzero(x->dd(x,grids[1,i],grids[2,i]),0.001,15)
+			try
+				pstar[i] = fzero(x->dd(x,grids[1,i],grids[2,i]),1.0)
+			catch
+				# assign nothing to pstar[i]:
+				# no eqm price found
+				# hence this is a missing value
+			end
 		end
 
 		# plot
-		figure()
-		plot(grids[1,:],grids[2,:],"o")
-		title("Question 2a: Gauss hermite theta grid")
-		
-		EP = dot(wt,pstar)
+		if n==10
+			figure()
+			plot(grids[1,:],grids[2,:],"o")
+			title("Question 2a: Gauss hermite theta grid")
+		end
+		wt = wt[!pstar.isnull]
+		pstar = dropnull(pstar)
+		EP = dot(wt,pstar)  # using all non-null values to compute this
 		VAR = dot(wt, (pstar .- EP).^2 )
 
 		return Dict("E[p]"=>EP, "Var[p]"=>VAR)
@@ -179,16 +213,25 @@ module HW_int
 		pts = rand(M,n)	# just draw from it randomly
 
 		# find eqm price at each combination of theta1,theta2
-		pstar = zeros(n)
+		pstar = NullableArray(Float64,n*n)  # create an array of nullable for float64
 		for i in 1:length(pstar)
-			pstar[i] = fzero(x->dd(x,pts[1,i],pts[2,i]),0.01,10)
+			try
+				pstar[i] = fzero(x->dd(x,grids[1,i],grids[2,i]),1.0)
+			catch
+				# assign nothing to pstar[i]:
+				# no eqm price found
+				# hence this is a missing value
+			end
 		end
 		
 		# plot
-		figure()
-		plot(pts[1,:],pts[2,:],"o")
-		title("Question 2b: Monte Carlo theta grid")
+		if n==100
+			figure()
+			plot(pts[1,:],pts[2,:],"o")
+			title("Question 2b: Monte Carlo theta grid")
+		end
 
+		pstar = dropnull(pstar)
 		EP = mean(pstar)
 
 		VAR = mean( (pstar .- EP).^2 )
@@ -203,26 +246,32 @@ module HW_int
 
 		s = SobolSeq(2,[1,1],[4,4])  # 2-dimensional sobol sequence 
 		pts = hcat([next(s) for i=1:n])
-		println("here's the sobol sequence")
-		println(pts)
+		if n == 100
+			println("here's the sobol sequence")
+			println(pts)
+		end
 
 		# find eqm price at each combination of theta1,theta2
-		pstar = Float64[]
-		for i in 1:n
-			tmp = fzero_wrap(x->dd(x,pts[i][1],pts[i][2]),0.0001,20)
-			if isnan(tmp)
-				# nothing
-			else
-				push!(pstar,tmp)
+		pstar = NullableArray(Float64,n*n)  # create an array of nullable for float64
+		for i in 1:length(pstar)
+			try
+				pstar[i] = fzero(x->dd(x,grids[1,i],grids[2,i]),0.001,15)
+			catch
+				# assign nothing to pstar[i]:
+				# no eqm price found
+				# hence this is a missing value
 			end
 		end
-		println("it's very hard to find the eqm price for those values")
+		println("it's very hard to find the eqm price for those random values")
 		
 		# plot
-		figure()
-		plot([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n],"o")
-		title("Question 2bonus: Quasi Monte Carlo theta grid")
+		if n==100
+			figure()
+			plot([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n],"o")
+			title("Question 2bonus: Quasi Monte Carlo theta grid")
+		end
 
+		pstar = dropnull(pstar)
 		EP = mean(pstar)
 
 		VAR = mean( (pstar .- EP).^2 )
@@ -231,24 +280,35 @@ module HW_int
 	end
 
 	# function to run all questions
-	function runall(n=10)
-		println("running all questions of HW-integration:")
-		println("results of question 1:")
-		question_1b(n)	# make sure your function prints some kind of result!
-		question_1c(n)
-		question_1d(n)
-		println("")
-		println("results of question 2:")
-		q2 = question_2a(n)
-		println(q2)
-		q2b = question_2b(n)
-		println(q2b)
-		println("")
-		println("bonus question: Quasi monte carlo:")
-		q2bo = question_2bonus(n)
-		println(q2bo)
-		println("end of HW-integration")
+	function runall()
+		info("Running all of HW-integration")
+		for n in (10,100,1000)
+			info("============================")
+			info("no showing results for n=$n")
+			info("question 1b:")
+			question_1b(n)	# make sure your function prints some kind of result!
+			info("question 1c:")
+			question_1c(n)
+			info("question 1d:")
+			question_1d(n)
+			println("")
+			info("question 2a:")
+			q2 = question_2a(n)
+			println(q2)
+			if n == 10
+				info("question 2b:")
+				q2b = question_2b(n)
+				println(q2b)
+				info("bonus question: Quasi monte carlo:")
+				q2bo = question_2bonus(n)
+				println(q2bo)
+			else
+				info("skipping question 2b: takes too long")
+			end
+			println()
+		end
 	end
+	info("end of HW-integration")
 
 end
 
