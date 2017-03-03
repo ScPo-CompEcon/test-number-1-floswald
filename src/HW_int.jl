@@ -9,11 +9,13 @@ module HW_int
 	using FastGaussQuadrature
 	using Roots
 	using Sobol
-	# using PyPlot
 	using Plots
 	using Distributions
 	using NullableArrays
 	using DataStructures  # OrderedDict
+
+	# choose plots backend
+	plotlyjs()
 
 	# demand function
 	q(p) = 2*(p.^-0.5)
@@ -61,17 +63,25 @@ module HW_int
 		# pts locations for n=10
 		p1 = Any[]
 		for (k,v) in d[10]
-			push!(p1,scatter(v[:x],v[:y],legend=false))
+			p = scatter(v[:x],v[:y],legend=false,xlims=(0.5,4.5),ylims=(0.5,2.5),title=k)
+			if k==:laguerre
+				yaxis!("Eval Points")
+			end
+			push!(p1,p)
 		end
 		# errors vs n
 		for (k,v) in d[10]
-			# println(k)
-			# println([print_f(d[ns[1]][k][:I]);print_f(d[ns[2]][k][:I]);print_f(d[ns[3]][k][:I])])
-			push!(p1,scatter(ns,[print_f(d[ns[1]][k][:I]);print_f(d[ns[2]][k][:I]);print_f(d[ns[3]][k][:I])],title=k,xaxis=(:log10),legend=false))
+			p = scatter(ns,[print_f(d[ns[1]][k][:I]);print_f(d[ns[2]][k][:I]);print_f(d[ns[3]][k][:I])],xaxis=(:log10),legend=false,xlims=(9,2*ns[3]),xticks=ns,xformatter=x->round(Int,x),yformatter=:scientific,m=(2,:cross,:red))
+			if k==:laguerre
+				yaxis!("Percent Error")
+			end
+			push!(p1,p)
 		end
 		plot(p1...,layout=l)
+		savefig("HW-int.pdf")
 
 	end
+
 
 	function question_1b(n)
 
@@ -190,16 +200,20 @@ module HW_int
 
 		# plot
 		if n==10
-			figure()
-			plot(grids[1,:],grids[2,:],"o")
-			title("Question 2a: Gauss hermite theta grid")
+			p = scatter(grids[1,:],grids[2,:])
+			title!("Question 2a: Gauss hermite theta grid")
 		end
 		wt = wt[!pstar.isnull]
 		pstar = dropnull(pstar)
 		EP = dot(wt,pstar)  # using all non-null values to compute this
 		VAR = dot(wt, (pstar .- EP).^2 )
 
-		return Dict("E[p]"=>EP, "Var[p]"=>VAR)
+		if n==10
+			return Dict("E[p]"=>EP, "Var[p]"=>VAR, "plot"=>p)
+		else
+			return Dict("E[p]"=>EP, "Var[p]"=>VAR)
+
+		end
 
 	end
 
@@ -226,16 +240,19 @@ module HW_int
 		
 		# plot
 		if n==100
-			figure()
-			plot(pts[1,:],pts[2,:],"o")
-			title("Question 2b: Monte Carlo theta grid")
+			p = scatter(pts[1,:],pts[2,:])
+			title!("Question 2b: Monte Carlo theta grid")
 		end
 
 		pstar = dropnull(pstar)
 		EP = mean(pstar)
 
 		VAR = mean( (pstar .- EP).^2 )
-		return Dict("E[p]"=>EP, "Var[p]"=>VAR)
+		if n==100
+			return Dict("E[p]"=>EP, "Var[p]"=>VAR, "plot"=>p)
+		else
+			return Dict("E[p]"=>EP, "Var[p]"=>VAR)
+		end
 
 	end
 
@@ -266,35 +283,43 @@ module HW_int
 		
 		# plot
 		if n==100
-			figure()
-			plot([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n],"o")
-			title("Question 2bonus: Quasi Monte Carlo theta grid")
+			p = scatter([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n])
+			title!("Question 2bonus: Quasi Monte Carlo theta grid")
 		end
 
 		pstar = dropnull(pstar)
 		EP = mean(pstar)
 
 		VAR = mean( (pstar .- EP).^2 )
-		return Dict("E[p]"=>EP, "Var[p]"=>VAR)
+		if n==100
+			return Dict("E[p]"=>EP, "Var[p]"=>VAR, "plot"=>p)
+		else
+			return Dict("E[p]"=>EP, "Var[p]"=>VAR)
+		end
+
 
 	end
 
 	# function to run all questions
 	function runall()
 		info("Running all of HW-integration")
+		info("question 1:")
+		plot_q1()
 		for n in (10,100,1000)
 			info("============================")
-			info("no showing results for n=$n")
-			info("question 1b:")
-			question_1b(n)	# make sure your function prints some kind of result!
-			info("question 1c:")
-			question_1c(n)
-			info("question 1d:")
-			question_1d(n)
-			println("")
+			info("now showing results for n=$n")
+			# info("question 1b:")
+			# question_1b(n)	# make sure your function prints some kind of result!
+			# info("question 1c:")
+			# question_1c(n)
+			# info("question 1d:")
+			# question_1d(n)
+			# println("")
 			info("question 2a:")
-			q2 = question_2a(n)
-			println(q2)
+			if n < 1000
+				q2 = question_2a(n)
+				println(q2)
+			end
 			if n == 10
 				info("question 2b:")
 				q2b = question_2b(n)
@@ -305,6 +330,7 @@ module HW_int
 			else
 				info("skipping question 2b: takes too long")
 			end
+
 			println()
 		end
 	end

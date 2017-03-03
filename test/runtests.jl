@@ -2,21 +2,22 @@
 
 module IntTest
 	using HW_int
-	using FactCheck
+	using Base.Test 
 
-	facts("check demand") do
-		@fact HW_int.q(1) --> 2
-		@fact HW_int.q(4) --> 1
-		@fact HW_int.q(9) --> 2/3
+	@testset "check demand" begin
+		@test HW_int.q(1) == 2
+		@test HW_int.q(4) == 1
+		@test HW_int.q(9) == 2/3
 	end
 
 
-	facts("check gauss adjustment") do
-		@fact HW_int.ba2(4) --> 2
+	@testset "check gauss adjustment" begin
+		@test HW_int.ba2(1,4) == 1.5
+		@test HW_int.ab2(1,4) == 2.5
 	end
 
-	facts("eqm condition for Q2") do 
-		@fact HW_int.dd(1,0,0) --> 0
+	@testset "eqm condition for Q2" begin
+		@test HW_int.dd(1,0,0) == 0
 
 	end
 end 
