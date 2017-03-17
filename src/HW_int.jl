@@ -15,7 +15,10 @@ module HW_int
 	using DataStructures  # OrderedDict
 
 	# choose plots backend
-	plotlyjs()
+	pyplot()
+
+	# set random seed
+	srand(12345)
 
 	# demand function
 	q(p) = 2*(p.^-0.5)
@@ -47,7 +50,7 @@ module HW_int
 
 		# run for all n
 		d = OrderedDict()
-		ns = [10;100;1000]
+		ns = [collect(10:15);20;30]
 		for n in ns
 			d[n] = Dict()
 			d[n][:laguerre] = question_1b(n)
@@ -71,14 +74,17 @@ module HW_int
 		end
 		# errors vs n
 		for (k,v) in d[10]
-			p = scatter(ns,[print_f(d[ns[1]][k][:I]);print_f(d[ns[2]][k][:I]);print_f(d[ns[3]][k][:I])],xaxis=(:log10),legend=false,xlims=(9,2*ns[3]),xticks=ns,xformatter=x->round(Int,x),yformatter=:scientific,m=(2,:cross,:red))
+			vals = print_f.([d[ns[j]][k][:I][1] for j in 1:length(ns)])
+			println("vals for $k = $vals")
+			p = scatter(ns,vals,legend=false,yformatter=:scientific,m=(:+,:red))
 			if k==:laguerre
 				yaxis!("Percent Error")
 			end
 			push!(p1,p)
 		end
-		plot(p1...,layout=l)
+		p = plot(p1...,layout=l)
 		savefig("HW-int.pdf")
+		return p
 
 	end
 

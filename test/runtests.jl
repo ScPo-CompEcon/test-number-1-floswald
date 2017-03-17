@@ -18,6 +18,5 @@ module IntTest
 
 	@testset "eqm condition for Q2" begin
 		@test HW_int.dd(1,0,0) == 0
-
 	end
 end 
