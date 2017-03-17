@@ -75,7 +75,6 @@ module HW_int
 		# errors vs n
 		for (k,v) in d[10]
 			vals = print_f.([d[ns[j]][k][:I][1] for j in 1:length(ns)])
-			println("vals for $k = $vals")
 			p = scatter(ns,vals,legend=false,yformatter=:scientific,m=(:+,:red))
 			if k==:laguerre
 				yaxis!("Percent Error")
@@ -83,7 +82,7 @@ module HW_int
 			push!(p1,p)
 		end
 		p = plot(p1...,layout=l)
-		savefig("HW-int.pdf")
+		savefig("HW-int.png")
 		return p
 
 	end
@@ -208,6 +207,7 @@ module HW_int
 		if n==10
 			p = scatter(grids[1,:],grids[2,:])
 			title!("Question 2a: Gauss hermite theta grid")
+			savefig("q2a.png")
 		end
 		wt = wt[!pstar.isnull]
 		pstar = dropnull(pstar)
@@ -248,6 +248,7 @@ module HW_int
 		if n==100
 			p = scatter(pts[1,:],pts[2,:])
 			title!("Question 2b: Monte Carlo theta grid")
+			savefig("q2b.png")
 		end
 
 		pstar = dropnull(pstar)
@@ -291,6 +292,8 @@ module HW_int
 		if n==100
 			p = scatter([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n])
 			title!("Question 2bonus: Quasi Monte Carlo theta grid")
+			
+			savefig("q2bonus.png")
 		end
 
 		pstar = dropnull(pstar)
