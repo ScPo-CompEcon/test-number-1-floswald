@@ -8,16 +8,16 @@ please look at the notebook for the analytic solution.
 
 The plot for q1 could look something like that:
 
-![](https://raw.githubusercontent.com/ScPo-CompEcon/HW-integration/solution/HW-int.png)
+![](q1.png)
 
 
 ## question 2
 
 The plots for q2:  
 
-![](https://raw.githubusercontent.com/ScPo-CompEcon/HW-integration/solution/q2a.png)  
-![](https://raw.githubusercontent.com/ScPo-CompEcon/HW-integration/solution/q2b.png)  
-![](https://raw.githubusercontent.com/ScPo-CompEcon/HW-integration/solution/q2bonus.png)
+![](q2a.png)  
+![](q2b.png)  
+![](q2bonus.png)
 
 ## Run solution
 
