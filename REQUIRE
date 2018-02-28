@@ -1,0 +1,9 @@
+julia 0.6
+
+FastGaussQuadrature
+Roots
+Sobol
+Plots
+Distributions
+NullableArrays
+DataStructures

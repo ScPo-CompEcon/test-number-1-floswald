@@ -1,0 +1,10 @@
+language: julia
+os:
+    - linux
+julia:
+  - 0.6
+notifications:
+  email: false
+#script: # the default script is equivalent to the following
+#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#  - julia -e 'Pkg.clone(pwd()); Pkg.build("Example"); Pkg.test("Example"; coverage=true)';
