@@ -1,11 +1,9 @@
 
-module HW_int
+module HWintegration
 
 	const A_SOL = 4  # analytic solution
 
-
-	# question 1 b) 
-
+	# imports
 	using FastGaussQuadrature
 	using Roots
 	using Sobol
@@ -14,8 +12,6 @@ module HW_int
 	using NullableArrays
 	using DataStructures  # OrderedDict
 
-	# choose plots backend
-	pyplot()
 
 	# set random seed
 	srand(12345)
@@ -28,17 +24,17 @@ module HW_int
 	ab2(lb,ub) = (lb+ub)/2
 
 	# eqm condition for question 2
-	# this is the equilibrium condition: total demand = supply, 
+	# this is the equilibrium condition: total demand = supply,
 	# i.e. domestic + export demand = 2
 	function dd(p,t1,t2)
 	    exp(t1)/p .+ exp(t2) .* p^-0.5 - 2
 	end
 
-	function fzero_wrap(f,lb,ub) 
+	function fzero_wrap(f,lb,ub)
 		try
 			fzero(f,lb,ub)
 		catch
-			println("no eqm price found")
+			warn("no eqm irice found")
 			return(NaN)
 		end
 	end
@@ -59,7 +55,7 @@ module HW_int
 		end
 
 		# build 2x3 plot matrix
-		# 			Laguerre 	MC 		QMC					
+		# 			Laguerre 	MC 		QMC
 		# points    pts vs vals at n = 10
 		# error     n vs error
 		l = @layout grid(2,3)
@@ -75,14 +71,14 @@ module HW_int
 		# errors vs n
 		for (k,v) in d[10]
 			vals = print_f.([d[ns[j]][k][:I][1] for j in 1:length(ns)])
-			p = scatter(ns,vals,legend=false,yformatter=:scientific,m=(:+,:red))
+			p = scatter(ns,vals,legend=false,m=(:+,:red))
 			if k==:laguerre
 				yaxis!("Percent Error")
 			end
 			push!(p1,p)
 		end
 		p = plot(p1...,layout=l)
-		savefig("HW-int.png")
+		# savefig("HW-int.png")
 		return p
 
 	end
@@ -109,8 +105,8 @@ module HW_int
 		# 	title("Gauss Laguerre")
 		# end
 
-		println("estimated change in CS using $n gauss legendre nodes is $(Integ)")
-		println("i.e. an error of $(print_fn(Integ)) percent")
+		info("estimated change in CS using $n gauss legendre nodes is $(Integ)")
+		info("i.e. an error of $(print_fn(Integ)) percent")
 		println("")
 		return Dict(:y=>vals, :x=>pts, :I => Integ)
 	end
@@ -120,14 +116,14 @@ module HW_int
 	function question_1c(n)
 
 		# get n random numbers from [1,4]
-		pts = rand(n)*3 + 1	
+		pts = rand(n)*3 + 1
 		vals = q(pts)
 
 		# integrate: Monte carlo is defined for the "hypercube" [0,1]
 		# we need to adjust the "volume" of this cube to be 3
 		# Integ = 3*mean(vals) - 2
-		Integ = 3*mean(vals) 
-		
+		Integ = 3*mean(vals)
+
 		# plot
 		# if n==10
 		# 	figure()
@@ -137,8 +133,8 @@ module HW_int
 		# 	title("Monte Carlo")
 		# end
 
-		println("estimated change in CS using $n monte carlo nodes is $Integ)")
-		println("i.e. an error of $(print_fn(Integ)) percent")
+		info("estimated change in CS using $n monte carlo nodes is $Integ)")
+		info("i.e. an error of $(print_fn(Integ)) percent")
 		println("")
 		return Dict(:y=>vals, :x=>pts, :I => Integ)
 
@@ -157,17 +153,9 @@ module HW_int
 		# integrate: Monte carlo is defined for the hypercube [0,1]
 		# we need to extend the length of that interval to be 3
 		Integ = 3*mean(vals)
-		
-		# plot
-		# if n==10
-		# 	figure()
-		# 	plot(pts,vals,"o")
-		# 	axhline(mean(vals),color="red")
-		# 	title("Quasi Monte Carlo")
-		# end
 
-		println("estimated change in CS using $n Quasi monte carlo nodes is $Integ)")
-		println("i.e. an error of $(print_fn(Integ)) percent")
+		info("estimated change in CS using $n Quasi monte carlo nodes is $Integ)")
+		info("i.e. an error of $(print_fn(Integ)) percent")
 		println("")
 		return Dict(:y=>vals, :x=>pts, :I => Integ)
 
@@ -207,9 +195,9 @@ module HW_int
 		if n==10
 			p = scatter(grids[1,:],grids[2,:])
 			title!("Question 2a: Gauss hermite theta grid")
-			savefig("q2a.png")
+			# savefig("q2a.png")
 		end
-		wt = wt[!pstar.isnull]
+		wt = wt[.!(pstar.isnull)]
 		pstar = dropnull(pstar)
 		EP = dot(wt,pstar)  # using all non-null values to compute this
 		VAR = dot(wt, (pstar .- EP).^2 )
@@ -236,19 +224,19 @@ module HW_int
 		pstar = NullableArray(Float64,n*n)  # create an array of nullable for float64
 		for i in 1:length(pstar)
 			try
-				pstar[i] = fzero(x->dd(x,grids[1,i],grids[2,i]),1.0)
+				pstar[i] = fzero(x->dd(x,pts[1,i],pts[2,i]),1.0)
 			catch
 				# assign nothing to pstar[i]:
 				# no eqm price found
 				# hence this is a missing value
 			end
 		end
-		
+
 		# plot
 		if n==100
 			p = scatter(pts[1,:],pts[2,:])
 			title!("Question 2b: Monte Carlo theta grid")
-			savefig("q2b.png")
+			# savefig("q2b.png")
 		end
 
 		pstar = dropnull(pstar)
@@ -268,33 +256,26 @@ module HW_int
 		# for fairness, let's also create n^2 points as in 2a
 		n = n^2
 
-		s = SobolSeq(2,[1,1],[4,4])  # 2-dimensional sobol sequence 
+		s = SobolSeq(2,[-0.6,-0.3],[0.6,0.3])  # 2-dimensional sobol sequence
 		pts = hcat([next(s) for i=1:n])
-		if n == 100
-			println("here's the sobol sequence")
-			println(pts)
-		end
 
 		# find eqm price at each combination of theta1,theta2
 		pstar = NullableArray(Float64,n*n)  # create an array of nullable for float64
 		for i in 1:length(pstar)
 			try
-				pstar[i] = fzero(x->dd(x,grids[1,i],grids[2,i]),0.001,15)
+				pstar[i] = fzero(x->dd(x,pts[i][1],pts[i][2]),0.001,15)
 			catch
 				# assign nothing to pstar[i]:
 				# no eqm price found
 				# hence this is a missing value
 			end
 		end
-		println("it's very hard to find the eqm price for those random values")
-		
+		warn("it's very hard to find the eqm price for those random values")
+
 		# plot
-		if n==100
-			p = scatter([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n])
-			title!("Question 2bonus: Quasi Monte Carlo theta grid")
-			
-			savefig("q2bonus.png")
-		end
+		p = scatter([pts[i][1] for i in 1:n],[pts[i][2] for i in 1:n])
+		title!("Question 2bonus: Quasi Monte Carlo theta grid")
+		# savefig("q2bonus.png")
 
 		pstar = dropnull(pstar)
 		EP = mean(pstar)
@@ -311,10 +292,10 @@ module HW_int
 
 	# function to run all questions
 	function runall()
-		info("Running all of HW-integration")
+		info("Running all of HWintegration")
 		info("question 1:")
 		plot_q1()
-		for n in (10,100,1000)
+		for n in (10,15,20)
 			info("============================")
 			info("now showing results for n=$n")
 			# info("question 1b:")
@@ -325,25 +306,16 @@ module HW_int
 			# question_1d(n)
 			# println("")
 			info("question 2a:")
-			if n < 1000
-				q2 = question_2a(n)
-				println(q2)
-			end
-			if n == 10
-				info("question 2b:")
-				q2b = question_2b(n)
-				println(q2b)
-				info("bonus question: Quasi monte carlo:")
-				q2bo = question_2bonus(n)
-				println(q2bo)
-			else
-				info("skipping question 2b: takes too long")
-			end
-
-			println()
+			q2 = question_2a(n)
+			println(q2)
+			info("question 2b:")
+			q2b = question_2b(n)
+			println(q2b)
+			info("bonus question: Quasi monte carlo:")
+			q2bo = question_2bonus(n)
+			println(q2bo)
 		end
 	end
-	info("end of HW-integration")
+	info("end of HWintegration")
 
 end
-
